@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from figma_parser import parse_figma
-from code_generator import generate_android_code
+from android_code_generator import generate_android_code
 from build_manager import build_project
 
 app = Flask(__name__)

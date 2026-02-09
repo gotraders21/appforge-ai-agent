@@ -1,40 +1,36 @@
 import os
-import shutil
 
-TEMPLATE_PATH = '../android_template'
+def generate_android_code(semantic_json, project_name):
+    """
+    Generates a basic Android project structure (MVP).
+    """
 
-def generate_kotlin_project(project_name, semantic_json):
-    output_path = os.path.join('outputs/generated_project', project_name)
-    os.makedirs(output_path, exist_ok=True)
+    base_path = f"outputs/{project_name}"
+    os.makedirs(base_path, exist_ok=True)
 
-    shutil.copytree(TEMPLATE_PATH, output_path, dirs_exist_ok=True)
+    # Fake Android structure for MVP
+    app_path = os.path.join(base_path, "app")
+    os.makedirs(app_path, exist_ok=True)
 
-    screens_path = os.path.join(output_path, 'app/src/main/java/com/appforge/screens')
-    os.makedirs(screens_path, exist_ok=True)
+    main_activity = f"""
+package com.appforge.{project_name.lower()}
 
-    for screen in semantic_json['screens']:
-        file_name = f"{screen['name'].replace(' ', '_')}.kt"
-        with open(os.path.join(screens_path, file_name), 'w') as f:
-            components_code = ""
-            for comp in screen['components']:
-                if comp['type'] == 'TEXT':
-                    components_code += f'Text("{comp["name"]}")\n'
-                elif comp['type'] == 'RECTANGLE':
-                    components_code += 'Box(modifier = Modifier.size(100.dp))\n'
-            f.write(f'''package com.appforge.screens
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.Text
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-
-@Composable
-fun {screen["name"].replace(" ", "_")}() {{
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {{
-        {components_code}
+class MainActivity : ComponentActivity() {{
+    override fun onCreate(savedInstanceState: Bundle?) {{
+        super.onCreate(savedInstanceState)
+        setContent {{
+            Text("Hello from AppForge AI")
+        }}
     }}
 }}
-''')
-    apk_link = f'{output_path}/app-debug.apk'
-    return output_path, apk_link
+"""
+
+    with open(os.path.join(app_path, "MainActivity.kt"), "w") as f:
+        f.write(main_activity)
+
+    return base_path

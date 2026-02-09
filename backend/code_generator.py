@@ -1,4 +1,15 @@
+from flask import Flask, request, jsonify
+
+import sys
 import os
+
+sys.path.append(os.path.dirname(__file__))
+
+from figma_parser import parse_figma
+from code_generator import generate_android_code
+from build_manager import build_project
+       
+
 
 def generate_android_code(semantic_json, project_name):
     """

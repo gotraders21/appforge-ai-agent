@@ -3,19 +3,27 @@ import os
 def generate_android_project(blueprint, project_name):
     """
     Generates a full Android Studio project from blueprint JSON
-    with navigation wired between screens.
+    with navigation and ViewModels wired.
     """
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.join(base_dir, "outputs", project_name)
 
+    # -------------------------------
     # 1. Create base directories
-    app_src_dir = os.path.join(project_root, "app", "src", "main", "java", "com", "appforge", project_name.lower())
+    app_src_dir = os.path.join(
+        project_root, "app", "src", "main", "java", "com", "appforge", project_name.lower()
+    )
     os.makedirs(app_src_dir, exist_ok=True)
 
     res_dir = os.path.join(project_root, "app", "src", "main", "res")
     os.makedirs(res_dir, exist_ok=True)
 
+    # 2. Create viewmodel directory
+    viewmodel_dir = os.path.join(app_src_dir, "viewmodels")
+    os.makedirs(viewmodel_dir, exist_ok=True)
+
+    # -------------------------------
     # 2. settings.gradle
     with open(os.path.join(project_root, "settings.gradle"), "w") as f:
         f.write(f"rootProject.name = '{project_name}'\ninclude ':app'")
@@ -68,9 +76,11 @@ dependencies {
     implementation "androidx.compose.material:material:1.5.0"
     implementation "androidx.compose.ui:ui-tooling-preview:1.5.0"
     implementation "androidx.navigation:navigation-compose:2.7.3"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.7.2"
 }
 """)
 
+    # -------------------------------
     # 5. AndroidManifest.xml
     manifest_dir = os.path.join(project_root, "app", "src", "main")
     os.makedirs(manifest_dir, exist_ok=True)
@@ -90,14 +100,16 @@ dependencies {
 </manifest>
 """)
 
-    # 6. Generate screens
+    # -------------------------------
+    # 6. Generate screens + ViewModels
     screens = blueprint.get("screens", [])
 
     for screen in screens:
         screen_name = screen["name"]
         components = screen.get("components", [])
-        screen_file = os.path.join(app_src_dir, f"{screen_name}.kt")
 
+        # ---- Screen Kotlin File ----
+        screen_file = os.path.join(app_src_dir, f"{screen_name}.kt")
         with open(screen_file, "w") as f:
             f.write(f"""
 package com.appforge.{project_name.lower()}
@@ -106,19 +118,20 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appforge.{project_name.lower()}.viewmodels.{screen_name}ViewModel
 
 @Composable
-fun {screen_name}(navController: NavController) {{
+fun {screen_name}(navController: NavController, vm: {screen_name}ViewModel = viewModel()) {{
     MaterialTheme {{
         Surface {{
 """)
             for comp in components:
                 ctype = comp.get("type")
                 label = comp.get("label", "")
-                if ctype.lower() == "textfield":
-                    f.write(f'            TextField(value = "", onValueChange = {{}}, label = {{ Text("{label}") }})\n')
-                elif ctype.lower() == "passwordfield":
-                    f.write(f'            TextField(value = "", onValueChange = {{}}, label = {{ Text("{label}") }})\n')
+                var_name = label.replace(" ", "_").lower()
+                if ctype.lower() in ["textfield", "passwordfield"]:
+                    f.write(f'            TextField(value = vm.{var_name}, onValueChange = {{ vm.{var_name} = it }}, label = {{ Text("{label}") }})\n')
                 elif ctype.lower() == "button":
                     action = comp.get("action", "")
                     if action.startswith("navigate:"):
@@ -132,6 +145,7 @@ fun {screen_name}(navController: NavController) {{
                     f.write(f'            TopAppBar(title = {{ Text("{comp.get("title","")}") }})\n')
                 elif ctype.lower() == "cardlist":
                     f.write(f'            Text("CardList placeholder: {comp.get("source","")}")\n')
+
             f.write("""
         }}
     }}
@@ -144,6 +158,26 @@ fun Preview{0}() {{
 }}
 """.format(screen_name))
 
+        # ---- ViewModel File ----
+        vm_file = os.path.join(viewmodel_dir, f"{screen_name}ViewModel.kt")
+        with open(vm_file, "w") as f:
+            f.write(f"""
+package com.appforge.{project_name.lower()}.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
+class {screen_name}ViewModel : ViewModel() {{
+""")
+            for comp in components:
+                if comp["type"].lower() in ["textfield", "passwordfield"]:
+                    var_name = comp["label"].replace(" ", "_").lower()
+                    f.write(f'    var {var_name} by mutableStateOf("")\n')
+            f.write("}\n")
+
+    # -------------------------------
     # 7. Generate NavGraph.kt
     nav_graph_file = os.path.join(app_src_dir, "NavGraph.kt")
     with open(nav_graph_file, "w") as f:
@@ -170,6 +204,7 @@ fun NavGraph() {{
 }
 """)
 
+    # -------------------------------
     # 8. Generate MainActivity.kt
     main_activity_file = os.path.join(app_src_dir, "MainActivity.kt")
     with open(main_activity_file, "w") as f:

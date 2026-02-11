@@ -12,7 +12,7 @@ FIGMA_TO_COMPOSE = {
     "LIST": "LazyColumn"
 }
 
-def parse_figma(figma_file_id):
+def parse_figma(figma_file_id: str):
     """
     Parse Figma file and convert to blueprint JSON
     """

@@ -26,7 +26,7 @@ def generate():
     project_path = generate_android_code(semantic_json, project_name)
 
     # Build APK
-    apk_path = build_project(project_path)
+    apk_path = build_project(project_name)
 
     return jsonify({
         "success": True,

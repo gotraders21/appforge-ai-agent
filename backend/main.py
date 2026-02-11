@@ -1,3 +1,5 @@
+from flask import send_from_directory
+import os
 from flask import Flask, request, jsonify
 from figma_parser import parse_figma
 from android_code_generator import generate_android_code
@@ -20,6 +22,12 @@ def generate():
         "project_path": project_path,
         "apk_link": apk_path
     })
+
+@app.route("/download/<project>/<filename>")
+def download_file(project, filename):
+    directory = os.path.join("outputs", project)
+    return send_from_directory(directory, filename, as_attachment=True)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

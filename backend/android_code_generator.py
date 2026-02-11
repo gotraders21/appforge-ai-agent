@@ -1,6 +1,6 @@
 import os
 
-def generate_android_code(semantic_json, project_name):
+def generate_android_project(semantic_json, project_name):
     """
     Generates basic Android project structure.
     """

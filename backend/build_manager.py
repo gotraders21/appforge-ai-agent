@@ -1,12 +1,14 @@
 import os
 
-def build_project(project_path):
+def build_project(project_name):
     """
     MVP build stub.
-    Later this will run Gradle + emulator.
+    Creates a placeholder APK inside backend/outputs/<project_name>/
     """
 
-    output_dir = project_path
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(base_dir, "outputs", project_name)
+
     os.makedirs(output_dir, exist_ok=True)
 
     apk_path = os.path.join(output_dir, "app-debug.apk")

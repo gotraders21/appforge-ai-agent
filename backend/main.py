@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, request, jsonify, send_from_directory
 from figma_parser import parse_figma
 from android_code_generator import generate_android_project
@@ -6,10 +7,19 @@ from build_manager import zip_project
 
 app = Flask(__name__)
 
+def extract_figma_file_id(figma_url: str) -> str:
+    """
+    Extract Figma file ID from /file/<id>/ or /design/<id>/ URL
+    """
+    match = re.search(r"/(file|design)/([a-zA-Z0-9]+)", figma_url)
+    if not match:
+        raise ValueError("Invalid Figma URL format")
+    return match.group(2)
+
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        # Get inputs from Lovable frontend
+        # Inputs from Lovable frontend
         user_prompt = request.json.get("user_prompt", "")
         figma_url = request.json.get("figma_url")
         project_name = request.json.get("project_name", "GeneratedApp")
@@ -17,18 +27,16 @@ def generate():
         if not figma_url:
             return jsonify({"success": False, "error": "Figma URL is required"}), 400
 
-        # Extract Figma file ID from URL
-        if "/file/" not in figma_url:
-            return jsonify({"success": False, "error": "Invalid Figma URL"}), 400
-        figma_file_id = figma_url.split("/file/")[1].split("/")[0]
+        # Extract Figma file ID
+        figma_file_id = extract_figma_file_id(figma_url)
 
-        # Parse Figma → blueprint
+        # Parse Figma → blueprint JSON
         blueprint = parse_figma(figma_file_id)
 
-        # Generate Android project
+        # Generate Android Studio project
         project_path = generate_android_project(blueprint, project_name)
 
-        # Zip the project for download
+        # Zip the project
         zip_path = zip_project(project_path)
 
         return jsonify({

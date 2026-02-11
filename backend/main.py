@@ -1,4 +1,5 @@
 import os
+from ai_planner import generate_blueprint
 from flask import Flask, request, jsonify, send_from_directory
 from figma_parser import parse_figma
 from android_code_generator import generate_android_code
@@ -9,28 +10,18 @@ app = Flask(__name__)
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.get_json()
-
-    if not data:
-        return jsonify({"success": False, "error": "No JSON body provided"}), 400
-
-    figma_file_id = data.get("figma_file_id")
+    user_prompt = data.get("prompt")
     project_name = data.get("project_name", "GeneratedApp")
 
-    if not figma_file_id:
-        return jsonify({"success": False, "error": "Missing figma_file_id"}), 400
+    blueprint = generate_blueprint(user_prompt)
 
-    # Parse Figma
-    semantic_json = parse_figma(figma_file_id)
+    project_path = generate_android_project(blueprint, project_name)
 
-    # Generate Android project
-    project_path = generate_android_code(semantic_json, project_name)
-
-    # Build APK
-    apk_path = build_project(project_name)
+    zip_path = build_project(project_name)
 
     return jsonify({
         "success": True,
-        "apk_link": f"/download/{project_name}/app-debug.apk"
+        "zip_link": f"/download/{project_name}.zip"
     })
 
 

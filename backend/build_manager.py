@@ -1,7 +1,7 @@
 import os
 import zipfile
 
-def zip_project(project_path):
+def zip_project(project_path: str) -> str:
     """
     Zip the generated Android project for download
     """

@@ -2,7 +2,7 @@ import os
 from ai_planner import generate_blueprint
 from flask import Flask, request, jsonify, send_from_directory
 from figma_parser import parse_figma
-from android_code_generator import generate_android_code
+from android_code_generator import generate_android_project
 from build_manager import build_project
 
 app = Flask(__name__)
